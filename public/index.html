@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <title>Zenda CMD - Hermes 3.0 Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="dashboard-header">
+    <div class="header-left">
+      <h1>ZENDA CMD</h1>
+      <span class="version">v3.0-split</span>
+    </div>
+    <div class="header-center">
+      <div class="pack-switcher">
+        <button class="pack-btn active" data-pack="full">Full Office</button>
+        <button class="pack-btn" data-pack="audit">Audit Mode</button>
+        <button class="pack-btn" data-pack="earn">Earn Mode</button>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="ws-status" class="status-dot offline"></span>
+      <span id="status-text">Connecting...</span>
+    </div>
+  </header>
+
+  <main id="app">
+    <div id="pixel-office"></div>
+    <div id="desk-drawers">
+      <div class="desk-drawer" id="desk-zenda" data-dept="ZENDA">
+        <h2>ZENDA - Commander</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-intake" data-dept="INTAKE">
+        <h2>SCOUT - Intake & Triage</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-scanner" data-dept="SCANNER">
+        <h2>SCANNER - Security Scan</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-results" data-dept="RESULTS">
+        <h2>REPORTER - Results</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-earn" data-dept="EARN">
+        <h2>EARNER - Revenue</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-incident" data-dept="INCIDENT">
+        <h2>INCIDENT - Response</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-msg" data-dept="MSG">
+        <h2>MESSENGER - Comms</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+      <div class="desk-drawer" id="desk-logs" data-dept="LOGS">
+        <h2>LOGGER - System Logs</h2>
+        <div class="drawer-content loading">Loading...</div>
+      </div>
+    </div>
+  </main>
+
+  <div id="report-viewer" class="hidden">
+    <div class="report-overlay">
+      <button class="close-report">&times;</button>
+      <div id="report-content"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="office.js"></script>
+  <script src="app.js"></script>
+  <script src="webmcp.js"></script>
+</body>
+</html>
