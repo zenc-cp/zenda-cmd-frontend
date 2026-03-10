@@ -38,7 +38,7 @@ function renderDesk(deskId, data) {
   if (typeof data === 'object') {
     Object.entries(data).forEach(([k, v]) => {
       if (k !== 'error' && k !== 'offline') {
-        html += '<div class="metric"><span>' + k + '</span><span class="metric-value">' + v + '</span></div>';
+        html += '<div class="metric"><span>' + k + '</span><span class="metric-value">' + (typeof v === 'object' ? JSON.stringify(v) : v) + '</span></div>';
       }
     });
   }
@@ -60,7 +60,7 @@ async function loadAllDesks() {
   renderDesk('earn', earnings);
   renderDesk('incident', incidents);
   renderDesk('msg', { status: 'WhatsApp gateway check pending' });
-  renderDesk('logs', { status: 'Systemd logs check pending' });
+  renderDesk('logs', { status: 'SystemD logs check pending' });
 
   // Update pixel office status
   const online = !agents.offline;
