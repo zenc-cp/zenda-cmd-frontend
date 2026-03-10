@@ -47,11 +47,13 @@ function renderDesk(deskId, data) {
 
 // Load all desk data
 async function loadAllDesks() {
-  const [agents, earnings, scans, incidents] = await Promise.all([
+    const [agents, earnings, scans, incidents, messengerStatus, loggerStatus] = await Promise.all([
     getAgentStatus(),
     getEarnings(),
     getScanResults(),
-    getIncidents()
+    getIncidents(),
+    getMessengerStatus(),
+    getLoggerStatus()
   ]);
   renderDesk('zenda', agents);
   renderDesk('intake', agents);
@@ -59,8 +61,8 @@ async function loadAllDesks() {
   renderDesk('results', scans);
   renderDesk('earn', earnings);
   renderDesk('incident', incidents);
-  renderDesk('msg', { status: 'WhatsApp gateway check pending' });
-  renderDesk('logs', { status: 'SystemD logs check pending' });
+    renderDesk('msg', messengerStatus);
+    renderDesk('logs', loggerStatus);
 
   // Update pixel office status
   const online = !agents.offline;
