@@ -1,8 +1,8 @@
-// Zenda CMD Runtime Config - Points to GCP VM API Gateway
+// Zenda CMD Runtime Config - Proxied via Express server
 window.ZENDA_CONFIG = {
-    API_BASE: 'https://34.150.104.118:8443',
+    API_BASE: '',
     API_KEY: 'zenda-cmd-key-2026',
-    WS_URL: 'wss://34.150.104.118:8443/ws',
+    WS_URL: '',
     VERSION: 'v3.0-split',
     PACKS: {
         full: {
