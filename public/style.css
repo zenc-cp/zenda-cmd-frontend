@@ -29,7 +29,7 @@ body { font-family: 'Courier New', monospace; background: var(--bg); color: var(
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* Pixel Office Canvas */
-#pixel-office { width: 100%; height: 200px; background: #1a1e2e; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+#pixel-office { width: 100%; height: 350px; background: #1a1e2e; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
 
 /* Desk Drawers */
 #desk-drawers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
