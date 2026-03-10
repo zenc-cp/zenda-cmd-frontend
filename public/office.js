@@ -1,4 +1,4 @@
-a// Zenda CMD Pixel Office - Claw Empire Style (S9) v2
+// Zenda CMD Pixel Office - Claw Empire Style (S9) v2
 // PixiJS 8 canvas with REAL Claw Empire sprites, tiled rooms, furniture, animations
 const SPRITE_BASE = 'https://raw.githubusercontent.com/GreenSheep01201/claw-empire/main/public/sprites/';
 
