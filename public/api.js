@@ -23,6 +23,8 @@ const getScanResults = () => zendaFetch('/api/scan/latest');
 const getIncidents = () => zendaFetch('/api/zenda/incidents');
 const getMemoryStatus = () => zendaFetch('/api/zenda/memory/status');
 const getSystemStatus = () => zendaFetch('/api/agents/health');
+const getMessengerStatus = () => zendaFetch('/api/messenger/status');
+const getLoggerStatus = () => zendaFetch('/api/logs/system');
 
 // WebSocket for live status
 let ws = null;
