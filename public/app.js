@@ -36,7 +36,7 @@
     for (const desk of desks) {
       try {
         const data = await window.ZendaAPI.apiFetch(desk.endpoint);
-        const status = data._offline ? 'offline' : (data.status === 'connected' || data.status === 'ok' || data.status === 'healthy') ? 'connected' : data.status === 'not_wired' ? 'not_wired' : 'offline';
+        const status = data._offline ? 'offline' : (data.status === 'connected' || data.status === 'ok' || data.status === 'healthy' || data.status === 'idle' || data.status === 'ready') ? 'connected' : data.status === 'not_wired' ? 'not_wired' : 'offline';
         agents.push({ id: desk.id, name: desk.id.toUpperCase(), role: desk.role, color: desk.color, status, port: desk.endpoint, latency: data.uptime ? Math.round(data.uptime) + 's' : '—', lastAction: data.message || data.status || '—' });
       } catch (_) {
         agents.push({ id: desk.id, name: desk.id.toUpperCase(), role: desk.role, color: desk.color, status: 'offline', port: '—', latency: '—', lastAction: '—' });
@@ -220,7 +220,7 @@
     for (const desk of desks) {
       try {
         const d = await window.ZendaAPI.apiFetch(desk.endpoint);
-        const s = d._offline ? 'offline' : (d.status === 'connected' || d.status === 'ok' || d.status === 'healthy') ? 'connected' : d.status === 'not_wired' ? 'not_wired' : 'offline';
+        const s = d._offline ? 'offline' : (d.status === 'connected' || d.status === 'ok' || d.status === 'healthy' || d.status === 'idle' || d.status === 'ready') ? 'connected' : d.status === 'not_wired' ? 'not_wired' : 'offline';
         const dot = document.getElementById(`dot-${desk.id}`);
         if (dot) { dot.className = 'agent-dot'; dot.classList.add(s === 'connected' ? 'green' : s === 'not_wired' ? 'yellow' : 'red'); }
       } catch (_) {
@@ -249,7 +249,7 @@
     let agent = {};
     try {
       const d = await window.ZendaAPI.apiFetch(desk.endpoint);
-      const s = d._offline ? 'offline' : (d.status === 'connected' || d.status === 'ok' || d.status === 'healthy') ? 'connected' : d.status === 'not_wired' ? 'not_wired' : 'offline';
+      const s = d._offline ? 'offline' : (d.status === 'connected' || d.status === 'ok' || d.status === 'healthy' || d.status === 'idle' || d.status === 'ready') ? 'connected' : d.status === 'not_wired' ? 'not_wired' : 'offline';
       agent = { id: desk.id, status: s };
     } catch (_) {
       agent = { id: desk.id, status: 'offline' };
