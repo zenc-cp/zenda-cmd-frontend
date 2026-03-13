@@ -3,79 +3,183 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-Frame-Options" content="DENY">
-  <title>Zenda CMD - Hermes 3.0 Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <title>ZENDA CMD — Pixel Office Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header id="dashboard-header">
+
+  <!-- ── HEADER ── -->
+  <header class="header">
     <div class="header-left">
-      <h1>ZENDA CMD</h1>
-      <span class="version">v3.0-split</span>
+      <span class="header-title">ZENDA CMD</span>
+      <span class="version-badge">v3.0-split</span>
     </div>
-    <div class="header-center">
-      <div class="pack-switcher">
-        <button class="pack-btn active" data-pack="full">Full Office</button>
-        <button class="pack-btn" data-pack="audit">Audit Mode</button>
-        <button class="pack-btn" data-pack="earn">Earn Mode</button>
-      </div>
-    </div>
+    <nav class="header-tabs">
+      <button class="tab-btn active" data-tab="office">Office</button>
+      <button class="tab-btn" data-tab="agents">Agents</button>
+      <button class="tab-btn" data-tab="revenue">$Revenue</button>
+      <button class="tab-btn" data-tab="logs">Logs</button>
+      <button class="tab-btn" data-tab="config">Config</button>
+    </nav>
     <div class="header-right">
-      <span id="ws-status" class="status-dot offline"></span>
-      <span id="status-text">Connecting...</span>
+      <div class="conn-dot offline" id="conn-dot"></div>
+      <span class="conn-label" id="conn-label">Connecting...</span>
     </div>
   </header>
 
-  <main id="app">
-    <div id="pixel-office"></div>
-    <div id="desk-drawers">
-      <div class="desk-drawer" id="desk-zenda" data-dept="ZENDA">
-        <h2>ZENDA - Commander</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-intake" data-dept="INTAKE">
-        <h2>SCOUT - Intake & Triage</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-scanner" data-dept="SCANNER">
-        <h2>SCANNER - Security Scan</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-results" data-dept="RESULTS">
-        <h2>REPORTER - Results</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-earn" data-dept="EARN">
-        <h2>EARNER - Revenue</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-incident" data-dept="INCIDENT">
-        <h2>INCIDENT - Response</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-msg" data-dept="MSG">
-        <h2>MESSENGER - Comms</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-      <div class="desk-drawer" id="desk-logs" data-dept="LOGS">
-        <h2>LOGGER - System Logs</h2>
-        <div class="drawer-content loading">Loading...</div>
-      </div>
-    </div>
-  </main>
+  <!-- ── MAIN LAYOUT ── -->
+  <div class="main-layout">
 
-  <div id="report-viewer" class="hidden">
-    <div class="report-overlay">
-      <button class="close-report">&times;</button>
-      <div id="report-content"></div>
+    <!-- ── CONTENT AREA ── -->
+    <div class="content-area">
+
+      <!-- Office Tab (default) -->
+      <div id="office-panel" class="tab-panel active">
+        <div id="pixi-container">
+          <div class="crt-overlay"></div>
+        </div>
+        <div class="canvas-footer">ZENDA CMD V2 · Pixel Office Command Center</div>
+      </div>
+
+      <!-- Agents Tab -->
+      <div id="agents-panel" class="tab-panel"></div>
+
+      <!-- Revenue Tab -->
+      <div id="revenue-panel" class="tab-panel"></div>
+
+      <!-- Logs Tab -->
+      <div id="logs-panel" class="tab-panel"></div>
+
+      <!-- Config Tab -->
+      <div id="config-panel" class="tab-panel"></div>
+
     </div>
+
+    <!-- ── RIGHT SIDEBAR ── -->
+    <aside class="sidebar">
+
+      <!-- CLOCK -->
+      <div class="sidebar-section">
+        <div class="section-title">CLOCK</div>
+        <div class="clock-tz">HKT (UTC+8)</div>
+        <div class="clock-time" id="clock-time">--:--:--</div>
+        <div class="clock-date" id="clock-date">---</div>
+      </div>
+
+      <!-- DAILY CHECKS -->
+      <div class="sidebar-section">
+        <div class="section-title">DAILY CHECKS</div>
+        <div class="check-item">
+          <input type="checkbox" id="chk-exa"><label for="chk-exa">Exa / Firecrawl</label>
+        </div>
+        <div class="check-item">
+          <input type="checkbox" id="chk-gumroad"><label for="chk-gumroad">Gumroad</label>
+        </div>
+        <div class="check-item">
+          <input type="checkbox" id="chk-devto"><label for="chk-devto">Dev.to</label>
+        </div>
+        <div class="check-item">
+          <input type="checkbox" id="chk-xcom"><label for="chk-xcom">X.com Session</label>
+        </div>
+        <div class="check-item">
+          <input type="checkbox" id="chk-fiverr"><label for="chk-fiverr">Fiverr</label>
+        </div>
+      </div>
+
+      <!-- AGENT STATUS -->
+      <div class="sidebar-section">
+        <div class="section-title">AGENT STATUS</div>
+        <div class="agent-dots">
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-zenda"></div>
+            <span class="agent-dot-label">Z</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-scout"></div>
+            <span class="agent-dot-label">S</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-scanner"></div>
+            <span class="agent-dot-label">S</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-reporter"></div>
+            <span class="agent-dot-label">R</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-earner"></div>
+            <span class="agent-dot-label">E</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot yellow" id="dot-incident"></div>
+            <span class="agent-dot-label">I</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-messenger"></div>
+            <span class="agent-dot-label">M</span>
+          </div>
+          <div class="agent-dot-item">
+            <div class="agent-dot green" id="dot-logger"></div>
+            <span class="agent-dot-label">L</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM OVERVIEW -->
+      <div class="sidebar-section">
+        <div class="section-title">SYSTEM OVERVIEW</div>
+        <div class="metric-row">
+          <span class="metric-label">RAM</span>
+          <span class="metric-value" id="metric-ram-val">--</span>
+        </div>
+        <div class="metric-bar-outer"><div class="metric-bar-inner" id="metric-ram-bar" style="width: 0%;"></div></div>
+
+        <div class="metric-row">
+          <span class="metric-label">Disk</span>
+          <span class="metric-value" id="metric-disk-val">--</span>
+        </div>
+        <div class="metric-bar-outer"><div class="metric-bar-inner" id="metric-disk-bar" style="width: 0%;"></div></div>
+
+        <div class="metric-row">
+          <span class="metric-label">CPU</span>
+          <span class="metric-value" id="metric-cpu-val">--</span>
+        </div>
+        <div class="metric-bar-outer"><div class="metric-bar-inner" id="metric-cpu-bar" style="width: 0%;"></div></div>
+
+        <div class="metric-row">
+          <span class="metric-label">Services</span>
+          <span class="metric-value" id="metric-services-val">--</span>
+        </div>
+        <div class="metric-bar-outer"><div class="metric-bar-inner" id="metric-services-bar" style="width: 0%;"></div></div>
+      </div>
+
+      <!-- REVENUE -->
+      <div class="sidebar-section">
+        <div class="section-title">REVENUE</div>
+        <div class="revenue-amount" id="sidebar-revenue-amount">$0</div>
+        <div class="revenue-target" id="sidebar-revenue-target">/ $3,000 target</div>
+        <div class="revenue-bar-outer">
+          <div class="revenue-bar-inner" id="sidebar-revenue-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+    </aside>
   </div>
 
+  <!-- ── MODAL OVERLAY ── -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-box"></div>
+  </div>
+
+  <!-- ── SCRIPTS ── -->
   <script src="config.js"></script>
   <script src="api.js"></script>
+  <script src="webmcp.js"></script>
   <script src="office.js"></script>
   <script src="app.js"></script>
-  <script src="webmcp.js"></script>
+
 </body>
 </html>
