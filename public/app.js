@@ -242,7 +242,7 @@
     });
   }
 
-  }}
+  }
 
   /* ── Modal ── */
   async function openModal(desk) {
