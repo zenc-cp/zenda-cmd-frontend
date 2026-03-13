@@ -326,8 +326,10 @@
     updateSidebarRevenue();
     updateAgentDots();
 
-    // Init Pixi
-    window.PixiOffice.init();
+    // Init Pixi (with retry — PixiJS dynamic import can race)
+    window.PixiOffice.init().catch(function() {
+      setTimeout(function() { window.PixiOffice.init().catch(function(){}); }, 2000);
+    });
 
     // Connect WebSocket
     window.ZendaAPI.onWsMessage(handleWsMessage);
