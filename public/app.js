@@ -264,7 +264,7 @@
       <button class="modal-close" onclick="window.ZendaApp.closeModal()">X</button>
       <div class="modal-agent-name" style="color: ${desk.color};">${desk.id.toUpperCase()}</div>
       <div class="modal-agent-role">${desk.role} · ${desk.dept}</div>
-      <div class="modal-status-badge ${statusClass}">${(statusClass).replace('_', ' ').toUpperCase()}</div>
+      <div class="modal-status-badge ${statusClass}">${statusClass === 'not_wired' ? 'PENDING' : statusClass === 'connected' ? 'ONLINE' : statusClass.replace('_', ' ').toUpperCase()}</div>
       <div class="modal-actions">
         ${actions.map(a => `
           <button class="modal-action-btn" onclick="window.ZendaApp.callAction('${a.endpoint}', '${a.method || 'GET'}')">${a.label}</button>

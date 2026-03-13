@@ -706,3 +706,219 @@ html, body {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); }
 ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* === BEAUTIFICATION v2 === */
+
+/* Glow effects for status dots */
+.agent-dot.green { box-shadow: 0 0 6px rgba(63,185,80,0.6); }
+.agent-dot.red { box-shadow: 0 0 6px rgba(248,81,73,0.5); }
+.agent-dot.yellow { box-shadow: 0 0 6px rgba(210,153,34,0.5); }
+
+/* Subtle card hover lift */
+.agent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  border-color: var(--accent-gold);
+}
+.agent-card { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+
+/* Header polish */
+.header {
+  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(22,27,34,0.95) 100%);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+/* Tab button refinement */
+.tab-btn {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.tab-btn:hover {
+  background: rgba(230,192,74,0.15);
+  color: var(--accent-gold);
+}
+.tab-btn.active {
+  background: rgba(230,192,74,0.2);
+  box-shadow: 0 0 8px rgba(230,192,74,0.2);
+}
+
+/* Sidebar sections refinement */
+.sidebar-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(48,54,61,0.6);
+}
+.sidebar-section h3 {
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.sidebar-section h3::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--accent-gold);
+  margin-top: 4px;
+  border-radius: 1px;
+}
+
+/* Progress bars glow */
+.metric-bar-fill {
+  box-shadow: 0 0 8px rgba(230,192,74,0.3);
+  transition: width 0.6s ease;
+}
+
+/* Clock pulse animation */
+@keyframes clockPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+#clock-time {
+  text-shadow: 0 0 20px rgba(230,192,74,0.4);
+}
+#clock-time .clock-colon {
+  animation: clockPulse 1s ease-in-out infinite;
+}
+
+/* Connection indicator */
+#ws-status {
+  position: relative;
+}
+#ws-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 4px currentColor; }
+  50% { box-shadow: 0 0 10px currentColor; }
+}
+
+/* Revenue section polish */
+#sidebar-revenue .revenue-amount {
+  text-shadow: 0 0 12px rgba(230,192,74,0.3);
+}
+
+/* Modal overlay backdrop blur */
+#modal-overlay {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Modal box polish */
+.modal-box {
+  border: 1px solid rgba(48,54,61,0.8);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 1px rgba(230,192,74,0.2);
+  animation: modalSlideIn 0.2s ease-out;
+}
+@keyframes modalSlideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Modal action buttons polish */
+.modal-action-btn {
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+.modal-action-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Revenue table polish */
+.revenue-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.revenue-table tr {
+  transition: background 0.15s;
+}
+.revenue-table tr:hover {
+  background: rgba(230,192,74,0.05);
+}
+
+/* Logs panel polish */
+.log-entry {
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+.log-entry:hover {
+  background: rgba(255,255,255,0.03);
+  border-left-color: var(--accent-gold);
+}
+.log-entry.warn, .log-entry.error {
+  border-left-color: var(--accent-red);
+}
+
+/* Config services table polish */
+.config-service-row {
+  transition: background 0.15s;
+}
+.config-service-row:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+/* PENDING badge for not_wired (orange/amber) */
+.modal-status-badge.not_wired {
+  background: rgba(210,153,34,0.2);
+  color: var(--accent-orange);
+  animation: pendingPulse 2s ease-in-out infinite;
+}
+@keyframes pendingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Agents page cards */
+.agent-card .status-badge {
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Subtle scanline effect for retro feel */
+.office-canvas-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Daily checks checkbox refinement */
+.daily-check input[type="checkbox"] {
+  accent-color: var(--accent-green);
+}
+.daily-check label {
+  transition: color 0.15s;
+}
+.daily-check:hover label {
+  color: var(--text);
+}
+
+/* Version badge polish */
+.version-badge {
+  background: rgba(230,192,74,0.15);
+  border: 1px solid rgba(230,192,74,0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
