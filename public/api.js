@@ -29,7 +29,7 @@ const getLoggerStatus = () => zendaFetch('/api/logs/system');
 // WebSocket for live status
 let ws = null;
 function connectWS(onMessage) {
-  const wsUrl = window.ZENDA_CONFIG.WS_URL;
+  const wsUrl = window.ZENDA_CONFIG.WS_URL || ((location.protocol==='https:' ? 'wss://' : 'ws://') + location.host + '/ws');
   ws = new WebSocket(wsUrl);
   ws.onopen = () => {
     document.getElementById('ws-status').className = 'status-dot online';
