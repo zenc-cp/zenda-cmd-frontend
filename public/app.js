@@ -287,7 +287,7 @@
     respEl.textContent = 'Loading...';
 
     const result = await window.ZendaAPI.fetch(endpoint, method);
-    respEl.textContent = JSON.stringify(result, null, 2);
+    if (result.status === "not_wired") { respEl.innerHTML = "<span style=\"color:#ffcc00\">26a0 Service pending setup</span>"; } else if (result.error || result._offline) { respEl.innerHTML = "<span style=\"color:#ff4444\">274c " + (result.error || "Offline") + "</span>"; } else { if (result.status === 'not_wired') { respEl.innerHTML = '<span style="color:#ffcc00">⚠ Service pending setup</span>'; } else if (result.error || result._offline) { respEl.innerHTML = '<span style="color:#ff4444">❌ ' + (result.error || 'Offline') + '</span>'; } else { respEl.textContent = JSON.stringify(result, null, 2); } }
   }
 
   /* ── WebSocket Handlers ── */
