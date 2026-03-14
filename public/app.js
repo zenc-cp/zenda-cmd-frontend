@@ -43,8 +43,8 @@
       }
     }
     if (!agents.length) { const mock = window.ZendaAPI.getMockAgents(); agents.push(...mock); }
-    panel.innerHTML = agents.map(a => `
-      <div class="agent-card" style="border-top: 3px solid ${a.color};">
+    panel.innerHTML = agents.map((a, idx) => `
+      <div class="agent-card" style="border-top: 3px solid ${a.color}; cursor: pointer;" onclick="window.ZendaApp.openModal(window.DESKS[${idx}])">
         <div class="agent-card-name" style="color: ${a.color};">${a.name}</div>
         <div class="agent-card-role">${a.role}</div>
         <div class="agent-card-status ${a.status}">${a.status.replace('_', ' ').toUpperCase()}</div>
@@ -52,6 +52,11 @@
           <span>Port: ${a.port}</span>
           <span>Latency: ${a.latency}</span>
           <span>Last: ${a.lastAction}</span>
+        </div>
+        <div class="agent-card-actions">
+          ${(window.AGENT_ACTIONS[a.id] || []).map(act => 
+            `<button class="agent-card-btn" onclick="event.stopPropagation(); window.ZendaApp.openModal(window.DESKS[${idx}])">${act.label}</button>`
+          ).join('')}
         </div>
       </div>
     `).join('');
@@ -280,6 +285,20 @@
     document.getElementById('modal-overlay').classList.remove('show');
   }
 
+  function formatApiResponse(data) {
+    const rows = Object.entries(data).map(([k, v]) => {
+      let val = v;
+      if (typeof v === 'object' && v !== null) val = Array.isArray(v) ? (v.length ? v.map(i => typeof i === 'object' ? JSON.stringify(i) : i).join(', ') : '(empty)') : JSON.stringify(v);
+      const key = k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
+      let color = '#c9d1d9';
+      if (v === 'connected' || v === 'ok' || v === 'healthy') color = '#3fb950';
+      if (v === 'offline' || v === 'error') color = '#f85149';
+      if (v === 'idle' || v === 'not_wired') color = '#d29922';
+      return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;"><span style="color:#8b949e;">${key}</span><span style="color:${color};">${val}</span></div>`;
+    }).join('');
+    return `<div style="font-size:7px;line-height:1.8;">${rows}</div>`;
+  }
+
   async function callAction(endpoint, method = 'GET') {
     const respEl = document.getElementById('modal-response');
     if (!respEl) return;
@@ -287,7 +306,14 @@
     respEl.textContent = 'Loading...';
 
     const result = await window.ZendaAPI.fetch(endpoint, method);
-    if (result.status === "not_wired") { respEl.innerHTML = "<span style=\"color:#ffcc00\">26a0 Service pending setup</span>"; } else if (result.error || result._offline) { respEl.innerHTML = "<span style=\"color:#ff4444\">274c " + (result.error || "Offline") + "</span>"; } else { if (result.status === 'not_wired') { respEl.innerHTML = '<span style="color:#ffcc00">⚠ Service pending setup</span>'; } else if (result.error || result._offline) { respEl.innerHTML = '<span style="color:#ff4444">❌ ' + (result.error || 'Offline') + '</span>'; } else { respEl.textContent = JSON.stringify(result, null, 2); } }
+    if (result.status === 'not_wired') {
+      respEl.innerHTML = '<span style="color:#ffcc00">⚠ Service pending setup — not yet wired to a backend</span>';
+    } else if (result.error || result._offline) {
+      respEl.innerHTML = '<span style="color:#ff4444">❌ ' + (result.error || 'Service offline') + '</span>';
+    } else {
+      // Format response nicely
+      respEl.innerHTML = formatApiResponse(result);
+    }
   }
 
   /* ── WebSocket Handlers ── */
