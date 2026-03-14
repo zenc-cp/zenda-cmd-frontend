@@ -465,6 +465,30 @@ html, body {
   margin-bottom: 2px;
 }
 
+.agent-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.agent-card-btn {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.agent-card-btn:hover {
+  background: rgba(230,192,74,0.15);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
 /* ── REVENUE TAB ── */
 #revenue-panel {
   padding: 12px;
