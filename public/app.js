@@ -4,6 +4,33 @@
   let clockInterval = null;
   let refreshInterval = null;
 
+  /* ── Status Detection Helper ── */
+  /* Each API endpoint returns different shapes. This normalizes them to:
+     'connected' | 'not_wired' | 'offline' */
+  function detectStatus(data, endpoint) {
+    if (!data || data._offline || data.error) return 'offline';
+    if (data.status === 'not_wired') return 'not_wired';
+    // Explicit status fields
+    if (data.status === 'connected' || data.status === 'ok' || data.status === 'healthy' || data.status === 'idle' || data.status === 'ready') return 'connected';
+    // Earnings endpoint: has "total" key = it's alive
+    if (endpoint && endpoint.includes('earnings') && 'total' in data) return 'connected';
+    // Incidents endpoint: has "active" or "resolved" key = it's alive
+    if (endpoint && endpoint.includes('incidents') && ('active' in data || 'resolved' in data)) return 'connected';
+    // Logs endpoint: has "entries" key = it's alive
+    if (endpoint && endpoint.includes('logs') && 'entries' in data) return 'connected';
+    // Scan latest: has "findings" key = it's alive
+    if (endpoint && endpoint.includes('scan') && ('findings' in data || 'lastScan' in data)) return 'connected';
+    // Audit queue: has "pending" or "completed" = it's alive
+    if (endpoint && endpoint.includes('audit') && ('pending' in data || 'completed' in data)) return 'connected';
+    // Messenger status: has "queueLength" = it's alive
+    if (endpoint && endpoint.includes('messenger') && 'queueLength' in data) return 'connected';
+    // Health endpoint: has "uptime" = it's alive
+    if ('uptime' in data) return 'connected';
+    // If we got valid JSON back with no error, likely connected
+    if (typeof data === 'object' && Object.keys(data).length > 0) return 'connected';
+    return 'offline';
+  }
+
   /* ── Tab Switching ── */
   function switchTab(tabId) {
     currentTab = tabId;
@@ -31,23 +58,21 @@
   async function renderAgents() {
     const panel = document.getElementById('agents-panel');
     const desks = window.ZENDA_CONFIG.DESKS;
-    // Try real API per desk, fall back to mock
     const agents = [];
     for (const desk of desks) {
       try {
         const data = await window.ZendaAPI.apiFetch(desk.endpoint);
-        const status = data._offline ? 'offline' : (data.status === 'connected' || data.status === 'ok' || data.status === 'healthy' || data.status === 'idle' || data.status === 'ready') ? 'connected' : data.status === 'not_wired' ? 'not_wired' : 'offline';
-        agents.push({ id: desk.id, name: desk.id.toUpperCase(), role: desk.role, color: desk.color, status, port: desk.endpoint, latency: data.uptime ? Math.round(data.uptime) + 's' : '—', lastAction: data.message || data.status || '—' });
+        const status = detectStatus(data, desk.endpoint);
+        agents.push({ id: desk.id, name: desk.id.toUpperCase(), role: desk.role, color: desk.color, status, port: desk.endpoint, latency: data.uptime ? Math.round(data.uptime) + 's' : '—', lastAction: summarizeData(data, desk.id) });
       } catch (_) {
         agents.push({ id: desk.id, name: desk.id.toUpperCase(), role: desk.role, color: desk.color, status: 'offline', port: '—', latency: '—', lastAction: '—' });
       }
     }
-    if (!agents.length) { const mock = window.ZendaAPI.getMockAgents(); agents.push(...mock); }
     panel.innerHTML = agents.map((a, idx) => `
       <div class="agent-card" style="border-top: 3px solid ${a.color}; cursor: pointer;" onclick="window.ZendaApp.openModal(window.DESKS[${idx}])">
         <div class="agent-card-name" style="color: ${a.color};">${a.name}</div>
         <div class="agent-card-role">${a.role}</div>
-        <div class="agent-card-status ${a.status}">${a.status.replace('_', ' ').toUpperCase()}</div>
+        <div class="agent-card-status ${a.status}">${a.status === 'not_wired' ? 'PENDING SETUP' : a.status === 'connected' ? 'ONLINE' : 'OFFLINE'}</div>
         <div class="agent-card-meta">
           <span>Port: ${a.port}</span>
           <span>Latency: ${a.latency}</span>
@@ -62,10 +87,68 @@
     `).join('');
   }
 
+  /* ── Summarize API response for "Last" field ── */
+  function summarizeData(data, agentId) {
+    if (!data || data._offline) return '—';
+    if (data.status === 'not_wired') return 'Pending setup';
+    switch (agentId) {
+      case 'zenda':    return data.uptime ? `Uptime ${Math.round(data.uptime)}s` : data.status || '—';
+      case 'scout':    return `${data.pending || 0} pending, ${data.completed || 0} done`;
+      case 'scanner':  return data.lastScan ? `Last scan: ${new Date(data.lastScan).toLocaleDateString()}` : `${data.findings || 0} findings`;
+      case 'reporter': return data.lastScan ? `Latest: ${new Date(data.lastScan).toLocaleDateString()}` : 'Ready';
+      case 'earner':   return `$${data.total || 0} earned`;
+      case 'incident': return `${data.active || 0} active, ${data.resolved || 0} resolved`;
+      case 'messenger': return data.queueLength !== undefined ? `Queue: ${data.queueLength}` : data.status || '—';
+      case 'logger':   return `${(data.entries || []).length} entries`;
+      default:         return data.status || data.message || '—';
+    }
+  }
+
   /* ── Revenue Tab ── */
-  function renderRevenue() {
+  async function renderRevenue() {
     const panel = document.getElementById('revenue-panel');
-    const data = window.ZendaAPI.getMockRevenue();
+    let data;
+    try {
+      const earnings = await window.ZendaAPI.apiFetch('/api/zenda/earnings');
+      if (earnings && !earnings._offline && !earnings.error) {
+        data = {
+          total: earnings.total || 0,
+          target: earnings.target || 3000,
+          streams: (earnings.streams || []).map(s => ({
+            name: s.name || s.stream || 'Unknown',
+            status: s.status || (s.monthly > 0 ? 'active' : 'paused'),
+            monthly: s.monthly || s.amount || 0
+          }))
+        };
+      }
+    } catch (_) {}
+    if (!data) data = window.ZendaAPI.getMockRevenue();
+
+    if (data.streams.length === 0) {
+      panel.innerHTML = `
+        <div style="text-align: center; padding: 16px 0; color: var(--text-dim);">
+          <div style="font-size: 9px; margin-bottom: 4px;">NO REVENUE STREAMS YET</div>
+          <div style="font-size: 7px;">Revenue streams will appear here once configured.</div>
+        </div>
+        <div class="revenue-total-row">
+          <span class="revenue-total-label">TOTAL MONTHLY</span>
+          <span class="revenue-total-amount">$${data.total}</span>
+        </div>
+        <div style="margin-top: 12px;">
+          <div style="font-size: 7px; color: var(--text-dim); margin-bottom: 4px;">
+            Progress to $${data.target.toLocaleString()} target
+          </div>
+          <div class="revenue-bar-outer">
+            <div class="revenue-bar-inner" style="width: ${(data.total / data.target * 100).toFixed(1)}%;"></div>
+          </div>
+          <div style="font-size: 6px; color: var(--accent-gold); margin-top: 4px; text-align: right;">
+            ${(data.total / data.target * 100).toFixed(1)}%
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     panel.innerHTML = `
       <table class="revenue-table">
         <thead>
@@ -104,15 +187,29 @@
   }
 
   /* ── Logs Tab ── */
-  function renderLogs() {
+  async function renderLogs() {
     const panel = document.getElementById('logs-panel');
-    const logs = window.ZendaAPI.getMockLogs();
+    let logs;
+    try {
+      const data = await window.ZendaAPI.apiFetch('/api/logs/system');
+      if (data && !data._offline && data.entries && data.entries.length > 0) {
+        logs = data.entries.map(e => ({
+          type: e.level || e.type || 'info',
+          msg: e.message || e.msg || JSON.stringify(e),
+          time: e.timestamp || e.time || null
+        }));
+      }
+    } catch (_) {}
+    if (!logs || logs.length === 0) {
+      logs = window.ZendaAPI.getMockLogs();
+    }
+
     const now = new Date();
     panel.innerHTML = `
       <div class="log-feed">
         ${logs.map((l, i) => {
-          const t = new Date(now - (logs.length - i) * 120000);
-          const ts = t.toLocaleTimeString('en-US', { hour12: false, timeZone: 'Asia/Hong_Kong' });
+          const ts = l.time ? new Date(l.time).toLocaleTimeString('en-US', { hour12: false, timeZone: 'Asia/Hong_Kong' })
+            : new Date(now - (logs.length - i) * 120000).toLocaleTimeString('en-US', { hour12: false, timeZone: 'Asia/Hong_Kong' });
           return `<div class="log-entry">
             <span class="log-time">${ts}</span>
             <span class="log-msg ${l.type}">${l.msg}</span>
@@ -207,7 +304,7 @@
     try {
       const earnings = await window.ZendaAPI.apiFetch('/api/zenda/earnings');
       if (earnings && !earnings._offline && !earnings.error) {
-        data = { total: earnings.total || earnings.monthly || earnings.earnings || 0, target: 3000, streams: [] };
+        data = { total: earnings.total || earnings.monthly || earnings.earnings || 0, target: earnings.target || 3000, streams: [] };
       }
     } catch (_) {}
     if (!data) data = window.ZendaAPI.getMockRevenue();
@@ -225,7 +322,7 @@
     for (const desk of desks) {
       try {
         const d = await window.ZendaAPI.apiFetch(desk.endpoint);
-        const s = d._offline ? 'offline' : (d.status === 'connected' || d.status === 'ok' || d.status === 'healthy' || d.status === 'idle' || d.status === 'ready') ? 'connected' : d.status === 'not_wired' ? 'not_wired' : 'offline';
+        const s = detectStatus(d, desk.endpoint);
         const dot = document.getElementById(`dot-${desk.id}`);
         if (dot) { dot.className = 'agent-dot'; dot.classList.add(s === 'connected' ? 'green' : s === 'not_wired' ? 'yellow' : 'red'); }
       } catch (_) {
@@ -233,28 +330,49 @@
         if (dot) { dot.className = 'agent-dot red'; }
       }
     }
-    /* legacy mock path */
-    if (false) {
-    const agents = window.ZendaAPI.getMockAgents();
-    agents.forEach(a => {
-      const dot = document.getElementById(`dot-${a.id}`);
-      if (dot) {
-        dot.className = 'agent-dot';
-        if (a.status === 'connected') dot.classList.add('green');
-        else if (a.status === 'offline') dot.classList.add('red');
-        else dot.classList.add('yellow');
-      }
-    });
   }
 
-  }
+  /* ── Action Button Definitions ── */
+  const ACTION_META = {
+    // GET actions — just fetch and display data
+    '/api/agents/health':       { type: 'get', label: 'System Health' },
+    '/api/audit/queue':         { type: 'get', label: 'Audit Queue' },
+    '/api/scan/config':         { type: 'get', label: 'Scan Config' },
+    '/api/scan/latest':         { type: 'get', label: 'Latest Scan' },
+    '/api/zenda/earnings':      { type: 'get', label: 'Earnings' },
+    '/api/zenda/incidents':     { type: 'get', label: 'Incidents' },
+    '/api/messenger/status':    { type: 'get', label: 'Messenger Status' },
+    '/api/logs/system':         { type: 'get', label: 'System Logs' },
+
+    // POST actions — fire-and-forget (no user input needed)
+    '/api/agents/restart':           { type: 'action', label: 'Restart Services', confirm: 'Restart all services?' },
+    '/api/scan/run':                 { type: 'action', label: 'Run Security Scan', confirm: 'Start a new scan?' },
+    '/api/report/generate':          { type: 'action', label: 'Generate Report' },
+    '/api/report/send':              { type: 'action', label: 'Send Report', confirm: 'Send the latest report?' },
+    '/api/zenda/incidents/resolve':  { type: 'action', label: 'Resolve All Incidents', confirm: 'Mark all incidents as resolved?' },
+    '/api/zenda/earnings/new':       { type: 'action', label: 'Add Revenue Stream' },
+    '/api/audit/intake':             { type: 'action', label: 'New Intake' },
+    '/api/logs/rotate':              { type: 'action', label: 'Rotate Logs', confirm: 'Rotate system logs?' },
+
+    // POST actions that require user input — show a form
+    '/api/messenger/send':  {
+      type: 'form',
+      label: 'Send Message',
+      fields: [
+        { key: 'chatId', label: 'Chat ID', placeholder: '85291378357@s.whatsapp.net' },
+        { key: 'message', label: 'Message', placeholder: 'Enter message...', textarea: true }
+      ]
+    }
+  };
 
   /* ── Modal ── */
   async function openModal(desk) {
     let agent = {};
+    let apiData = {};
     try {
       const d = await window.ZendaAPI.apiFetch(desk.endpoint);
-      const s = d._offline ? 'offline' : (d.status === 'connected' || d.status === 'ok' || d.status === 'healthy' || d.status === 'idle' || d.status === 'ready') ? 'connected' : d.status === 'not_wired' ? 'not_wired' : 'offline';
+      apiData = d;
+      const s = detectStatus(d, desk.endpoint);
       agent = { id: desk.id, status: s };
     } catch (_) {
       agent = { id: desk.id, status: 'offline' };
@@ -269,11 +387,16 @@
       <button class="modal-close" onclick="window.ZendaApp.closeModal()">X</button>
       <div class="modal-agent-name" style="color: ${desk.color};">${desk.id.toUpperCase()}</div>
       <div class="modal-agent-role">${desk.role} · ${desk.dept}</div>
-      <div class="modal-status-badge ${statusClass}">${statusClass === 'not_wired' ? 'PENDING' : statusClass === 'connected' ? 'ONLINE' : statusClass.replace('_', ' ').toUpperCase()}</div>
+      <div class="modal-status-badge ${statusClass}">${statusClass === 'not_wired' ? 'PENDING SETUP' : statusClass === 'connected' ? 'ONLINE' : 'OFFLINE'}</div>
+      <div style="font-size:7px; color:#8b949e; margin: 4px 0 8px; text-align:center;">${summarizeData(apiData, desk.id)}</div>
       <div class="modal-actions">
-        ${actions.map(a => `
-          <button class="modal-action-btn" onclick="window.ZendaApp.callAction('${a.endpoint}', '${a.method || 'GET'}')">${a.label}</button>
-        `).join('')}
+        ${actions.map(a => {
+          const meta = ACTION_META[a.endpoint];
+          if (meta && meta.type === 'form') {
+            return `<button class="modal-action-btn" onclick="window.ZendaApp.showForm('${a.endpoint}')">${a.label}</button>`;
+          }
+          return `<button class="modal-action-btn" onclick="window.ZendaApp.callAction('${a.endpoint}', '${a.method || 'GET'}')">${a.label}</button>`;
+        }).join('')}
       </div>
       <div class="modal-response" id="modal-response"></div>
     `;
@@ -293,25 +416,107 @@
       let color = '#c9d1d9';
       if (v === 'connected' || v === 'ok' || v === 'healthy') color = '#3fb950';
       if (v === 'offline' || v === 'error') color = '#f85149';
-      if (v === 'idle' || v === 'not_wired') color = '#d29922';
+      if (v === 'idle' || v === 'not_wired' || v === 'ready') color = '#d29922';
+      if (typeof v === 'number') color = '#79c0ff';
       return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;"><span style="color:#8b949e;">${key}</span><span style="color:${color};">${val}</span></div>`;
     }).join('');
     return `<div style="font-size:7px;line-height:1.8;">${rows}</div>`;
   }
 
+  /* ── Show Form for POST actions needing input ── */
+  function showForm(endpoint) {
+    const respEl = document.getElementById('modal-response');
+    if (!respEl) return;
+    const meta = ACTION_META[endpoint];
+    if (!meta || meta.type !== 'form') return;
+
+    respEl.style.display = 'block';
+    respEl.innerHTML = `
+      <div style="font-size:7px; padding: 6px 0;">
+        ${meta.fields.map(f => `
+          <div style="margin-bottom: 6px;">
+            <label style="color:#8b949e; display:block; margin-bottom:2px;">${f.label}</label>
+            ${f.textarea
+              ? `<textarea id="form-${f.key}" placeholder="${f.placeholder || ''}" style="width:100%;min-height:40px;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:4px;font-size:7px;border-radius:3px;resize:vertical;"></textarea>`
+              : `<input id="form-${f.key}" placeholder="${f.placeholder || ''}" style="width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:4px;font-size:7px;border-radius:3px;" />`
+            }
+          </div>
+        `).join('')}
+        <button class="modal-action-btn" style="margin-top:4px;" onclick="window.ZendaApp.submitForm('${endpoint}')">Send</button>
+      </div>
+    `;
+  }
+
+  /* ── Submit Form ── */
+  async function submitForm(endpoint) {
+    const meta = ACTION_META[endpoint];
+    if (!meta || meta.type !== 'form') return;
+
+    const body = {};
+    let hasEmpty = false;
+    for (const f of meta.fields) {
+      const el = document.getElementById(`form-${f.key}`);
+      const val = el ? el.value.trim() : '';
+      if (!val) { hasEmpty = true; }
+      body[f.key] = val;
+    }
+
+    const respEl = document.getElementById('modal-response');
+    if (hasEmpty) {
+      respEl.innerHTML = '<span style="color:#ffcc00">Please fill in all fields</span>';
+      return;
+    }
+
+    respEl.innerHTML = '<span style="color:#8b949e">Sending...</span>';
+    const result = await window.ZendaAPI.apiFetch(endpoint, 'POST', body);
+
+    if (result.error || result._offline) {
+      respEl.innerHTML = '<span style="color:#ff4444">' + (result.error || 'Service offline') + '</span>';
+    } else if (result.status === 'not_wired') {
+      respEl.innerHTML = '<span style="color:#ffcc00">This service is not yet connected to a backend. It will work once wired up.</span>';
+    } else {
+      respEl.innerHTML = '<span style="color:#3fb950">Sent successfully</span>' + formatApiResponse(result);
+    }
+  }
+
+  /* ── Call Action (GET or fire-and-forget POST) ── */
   async function callAction(endpoint, method = 'GET') {
     const respEl = document.getElementById('modal-response');
     if (!respEl) return;
-    respEl.style.display = 'block';
-    respEl.textContent = 'Loading...';
 
-    const result = await window.ZendaAPI.fetch(endpoint, method);
+    const meta = ACTION_META[endpoint];
+
+    // If this action has a confirmation prompt, ask first
+    if (meta && meta.confirm && method === 'POST') {
+      respEl.style.display = 'block';
+      respEl.innerHTML = `
+        <div style="font-size:7px;padding:4px 0;">
+          <div style="color:#d29922;margin-bottom:6px;">${meta.confirm}</div>
+          <button class="modal-action-btn" style="margin-right:6px;" onclick="window.ZendaApp.executeAction('${endpoint}', '${method}')">Confirm</button>
+          <button class="modal-action-btn" onclick="document.getElementById('modal-response').style.display='none'">Cancel</button>
+        </div>
+      `;
+      return;
+    }
+
+    await executeAction(endpoint, method);
+  }
+
+  async function executeAction(endpoint, method = 'GET') {
+    const respEl = document.getElementById('modal-response');
+    if (!respEl) return;
+    respEl.style.display = 'block';
+    respEl.innerHTML = '<span style="color:#8b949e">Loading...</span>';
+
+    const result = await window.ZendaAPI.apiFetch(endpoint, method, method === 'POST' ? {} : null);
+
     if (result.status === 'not_wired') {
-      respEl.innerHTML = '<span style="color:#ffcc00">⚠ Service pending setup — not yet wired to a backend</span>';
+      respEl.innerHTML = '<span style="color:#ffcc00">This service is not yet connected to a backend. It will be available once the backend is wired up.</span>';
+    } else if (result.error && result.error.includes('required')) {
+      respEl.innerHTML = '<span style="color:#ffcc00">This action requires additional input. Use the form button above.</span>';
     } else if (result.error || result._offline) {
-      respEl.innerHTML = '<span style="color:#ff4444">❌ ' + (result.error || 'Service offline') + '</span>';
+      respEl.innerHTML = '<span style="color:#ff4444">' + (result.error || 'Service offline — check VM connection') + '</span>';
     } else {
-      // Format response nicely
       respEl.innerHTML = formatApiResponse(result);
     }
   }
@@ -319,7 +524,6 @@
   /* ── WebSocket Handlers ── */
   function handleWsMessage(data) {
     if (data.type === 'status_update' && data.agent) {
-      // Update room status
       if (window.PixiOffice) {
         window.PixiOffice.updateRoomStatus(data.agent, data.status);
       }
@@ -376,7 +580,10 @@
     switchTab,
     openModal,
     closeModal,
-    callAction
+    callAction,
+    executeAction,
+    showForm,
+    submitForm
   };
 
   // Auto-init on DOMContentLoaded
